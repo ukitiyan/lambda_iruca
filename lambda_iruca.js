@@ -52,9 +52,7 @@ var processEvent = function(event, context) {
     var user = params.user_name;
     var command = params.command;
     var channel = params.channel_name;
-    var commandText = params.text;
-
-    var commandTexts = commandText.replace( /@/g , '' ).split(' ');
+    var commandText = (params.text).replace( /@/g , '' ).split(' ');
 
     var membersUrl = 'https://' + host + basePath + irucaRoomCode + '/members' + '?pass=' + irucaPass;
     https.get(membersUrl, function(res) {
@@ -67,14 +65,14 @@ var processEvent = function(event, context) {
 
         res.on('end', function() {
             data = JSON.parse(body);
-            message = '';
             memberId = '';
             memberName = '';
+            memberStatus = '';
             for(var i = 0; i < data.length; i++) {
-                if (commandTexts[0] === 'all' || commandTexts[0] === data[i].name) {
-                  message = message + " ```" + data[i].name + ' : ' + data[i].status + ' : ' + data[i].message  + "``` ";
+                if (commandText[0] === 'all' || commandText[0] === data[i].name) {
+                  memberStatus = memberStatus + " ```" + data[i].name + ' : ' + data[i].status + ' : ' + data[i].message  + "``` ";
                 }
-                if (statusMap[commandTexts[0]]) {
+                if (statusMap[commandText[0]]) {
                     if (user === data[i].name) {
                         memberId = data[i].id;
                         memberName = data[i].name;
@@ -82,10 +80,10 @@ var processEvent = function(event, context) {
                 }
             }
 
-            if (statusMap[commandTexts[0]]) {
-                putMember(context, statusMap[commandTexts[0]], memberId, memberName, commandTexts[1]);
+            if (statusMap[commandText[0]]) {
+                putMember(context, memberId, memberName, statusMap[commandText[0]], commandText[1]);
             } else {
-                context.succeed(message);
+                context.succeed(memberStatus);
             }
         });
 
@@ -94,7 +92,7 @@ var processEvent = function(event, context) {
     });
 };
 
-var putMember = function(context, status, memberId, memberName, message) {
+var putMember = function(context, memberId, memberName, status, message) {
     var body = JSON.stringify({
         pass: irucaPass,
         status: status,
